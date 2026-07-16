@@ -20,4 +20,4 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other progra
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
-Для компиляции проекта вам понадобится установленный **.NET 8.0 SDK**.
+To compile the project, you will need the **.NET 8.0 SDK**.
