@@ -185,7 +185,7 @@ namespace screenshot
             }
             catch
             {
-                // чтоб не падать изза звука
+                // чтоб не падать изза звук
             }
 
             bmp.Dispose();
@@ -254,6 +254,43 @@ namespace screenshot
         }
     }
 
+    abstract class DrawAction
+    {
+        public abstract void Draw(Graphics g);
+    }
+
+    class PenAction : DrawAction
+    {
+        public List<Point> Points { get; } = new List<Point>();
+        public Color Color { get; set; } = Color.Red;
+        public float Width { get; set; } = 3f;
+
+        public override void Draw(Graphics g)
+        {
+            if (Points.Count < 2) return;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (Pen pen = new Pen(Color, Width) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+            {
+                g.DrawLines(pen, Points.ToArray());
+            }
+        }
+    }
+
+    class RectAction : DrawAction
+    {
+        public Rectangle Rect { get; set; }
+        public Color Color { get; set; } = Color.Maroon;
+
+        public override void Draw(Graphics g)
+        {
+            if (Rect.Width <= 0 || Rect.Height <= 0) return;
+            using (SolidBrush brush = new SolidBrush(Color))
+            {
+                g.FillRectangle(brush, Rect);
+            }
+        }
+    }
+
     class OverlayForm : Form
     {
         private const int WM_RBUTTONDOWN = 0x0204;
@@ -262,8 +299,10 @@ namespace screenshot
         private readonly Bitmap background;
         private readonly bool isColorPicker;
         
+        private readonly List<DrawAction> actions = new List<DrawAction>();
+        private PenAction? currentPenAction;
+
         private Point startPoint;
-        private Point lastPenPoint;
         private bool isDrawing = false;
         private bool isDrawingWithPen = false;
         private bool isDrawingRectangle = false; 
@@ -291,6 +330,27 @@ namespace screenshot
             this.KeyPreview = true; 
             
             this.TransparencyKey = Color.Empty;
+        }
+
+        private void UndoLastAction()
+        {
+            if (actions.Count > 0)
+            {
+                actions.RemoveAt(actions.Count - 1);
+                this.Invalidate();
+            }
+        }
+
+        private void BakeActionsToBackground()
+        {
+            if (actions.Count == 0 || background == null) return;
+            using (Graphics g = Graphics.FromImage(background))
+            {
+                foreach (var action in actions)
+                {
+                    action.Draw(g);
+                }
+            }
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -361,6 +421,11 @@ namespace screenshot
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             e.Graphics.DrawImage(background, 0, 0);
 
+            foreach (var action in actions)
+            {
+                action.Draw(e.Graphics);
+            }
+
             if (isColorPicker)
             {
                 using (SolidBrush brush = new SolidBrush(currentMouseColor))
@@ -417,17 +482,9 @@ namespace screenshot
                     this.Invalidate();
                 }
             }
-            else if (isDrawingWithPen)
+            else if (isDrawingWithPen && currentPenAction != null)
             {
-                using (Graphics g = Graphics.FromImage(background))
-                {
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (Pen redPen = new Pen(Color.Red, 3) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-                    {
-                        g.DrawLine(redPen, lastPenPoint, e.Location);
-                    }
-                }
-                lastPenPoint = e.Location;
+                currentPenAction.Points.Add(e.Location);
                 this.Invalidate();
             }
             else if (isDrawingRectangle)
@@ -464,7 +521,9 @@ namespace screenshot
                 else if (isCtrlPressed)
                 {
                     isDrawingWithPen = true;
-                    lastPenPoint = e.Location;
+                    currentPenAction = new PenAction();
+                    currentPenAction.Points.Add(e.Location);
+                    actions.Add(currentPenAction);
                 }
                 else if (isAltPressed)
                 {
@@ -487,19 +546,18 @@ namespace screenshot
                 if (isDrawingWithPen)
                 {
                     isDrawingWithPen = false;
+                    if (currentPenAction != null && currentPenAction.Points.Count == 1)
+                    {
+                        currentPenAction.Points.Add(currentPenAction.Points[0]);
+                    }
+                    currentPenAction = null;
                 }
                 else if (isDrawingRectangle)
                 {
                     isDrawingRectangle = false;
                     if (currentAltRect.Width > 0 && currentAltRect.Height > 0)
                     {
-                        using (Graphics g = Graphics.FromImage(background))
-                        {
-                            using (SolidBrush maroonBrush = new SolidBrush(Color.Maroon)) 
-                            {
-                                g.FillRectangle(maroonBrush, currentAltRect);
-                            }
-                        }
+                        actions.Add(new RectAction { Rect = currentAltRect, Color = Color.Maroon });
                     }
                     currentAltRect = Rectangle.Empty;
                     this.Invalidate();
@@ -509,6 +567,7 @@ namespace screenshot
                     isDrawing = false;
                     if (SelectedArea.Width > 5 && SelectedArea.Height > 5)
                     {
+                        BakeActionsToBackground();
                         this.DialogResult = DialogResult.OK;
                         this.Close();
                     }
@@ -522,6 +581,11 @@ namespace screenshot
             {
                 this.DialogResult = DialogResult.Cancel;
                 this.Close();
+                return true;
+            }
+            if (keyData == Keys.Back || keyData == (Keys.Control | Keys.Z))
+            {
+                UndoLastAction();
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
