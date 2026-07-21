@@ -11,7 +11,8 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other progra
     * `PrintScreen` — Screenshot of the screen area.
         * `Ctrl + LMB` — Drawing red lines.
         * `Alt + LMB` — Covering the area with a solid maroon rectangle.
-        * `RMB` or `Esc` — Undo/Reset Selection.
+        * `Ctrl + Z` or `BackSpace` — Undo drawn.
+        * `RMB` or `Esc` — Reset drawn/selection.
     * `Shift + PrintScreen` — Instant screenshot of the entire screen.
     * `Ctrl + PrintScreen` — Dropper (Color Picker). Left-click copies the HEX code of the colour to the clipboard.
 
