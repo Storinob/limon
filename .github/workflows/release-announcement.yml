@@ -2,7 +2,7 @@ name: Send Discord Release Announcement
 
 on:
   release:
-    types: [published]
+    types: [published, prereleased]   # <-- Добавили prereleased
 
 jobs:
   announce:
@@ -12,7 +12,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Подготовка текста релиза и экранирование спецсимволов для JSON
+          # Подготовка текста релиза
           NOTES=$(echo "${{ github.event.release.body }}" | jq -sR .)
           TITLE=$(echo "${{ github.event.release.name }}" | jq -sR .)
           TAG="${{ github.event.release.tag_name }}"
