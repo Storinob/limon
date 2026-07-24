@@ -1,6 +1,6 @@
-# limon
-
 <img width="250" height="250" alt="logo-gh" src="https://github.com/user-attachments/assets/26eee073-d543-43f7-8e32-4c8b78c00df9" />
+
+# limon
 
 A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other programs.
 It has a screenshot function and a colour eyedropper, and it runs in the background without an icon in the taskbar.
@@ -8,6 +8,7 @@ It has a screenshot function and a colour eyedropper, and it runs in the backgro
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
 ![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
 [![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
+
 
 ## Features
 
