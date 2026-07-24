@@ -5,7 +5,15 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>screenshot</AssemblyName>
+    <AssemblyName>limon</AssemblyName>
+	  <ApplicationIcon>limon.ico</ApplicationIcon>
+	  <Title>limon</Title>
+    <Product>limon utility</Product>
+    <Description>limon utility</Description>
+    <Authors>b1no</Authors>
+  	<Copyright>b1no © 2026</Copyright>
+  	<AssemblyVersion>4.2</AssemblyVersion>
+  	<Version>4.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="done.wav" />
