@@ -14,7 +14,8 @@ namespace screenshot
 {
     static class Program
     {
-        [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+        [DllImport("user32.dll")] 
+        public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
         private static HiddenForm? hiddenForm;
 
@@ -29,7 +30,6 @@ namespace screenshot
                     procInfo.UseShellExecute = true;
                     procInfo.FileName = Environment.ProcessPath;
                     procInfo.Verb = "runas";
-
                     Process.Start(procInfo);
                 }
                 catch
@@ -41,7 +41,6 @@ namespace screenshot
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
             hiddenForm = new HiddenForm();
             Application.Run();
         }
@@ -64,8 +63,32 @@ namespace screenshot
         private const uint MOD_CONTROL = 0x0002;
         private const uint VK_PRINTSCREEN = 0x002C;
 
-        private static readonly Random random = new Random();
-        private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        [DllImport("gdi32.dll")]
+        private static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, 
+            IntPtr hdcSrc, int nXSrc, int nYSrc, uint dwRop);
+        
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+        
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
+        
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
+        
+        [DllImport("gdi32.dll")]
+        private static extern bool DeleteDC(IntPtr hdc);
+        
+        [DllImport("gdi32.dll")]
+        private static extern bool DeleteObject(IntPtr hObject);
+        
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDC(IntPtr hWnd);
+        
+        [DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        private const uint SRCCOPY = 0x00CC0020;
 
         public HiddenForm()
         {
@@ -99,12 +122,7 @@ namespace screenshot
 
         private string GenerateRandomName()
         {
-            StringBuilder result = new StringBuilder(8);
-            for (int i = 0; i < 8; i++)
-            {
-                result.Append(Chars[random.Next(Chars.Length)]);
-            }
-            return result.ToString();
+            return Guid.NewGuid().ToString("N").Substring(0, 8);
         }
 
         private string GetSavePath()
@@ -114,49 +132,35 @@ namespace screenshot
             string targetDir = Path.Combine(picturesDir, "screenshots", monthFolder);
             
             if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
-
+            
             string randomName = GenerateRandomName();
             return Path.Combine(targetDir, $"{randomName}.png");
         }
 
-        private void SanitizeBitmapPixels(Bitmap bmp)
+        private Bitmap CaptureScreenWithBitBlt(Rectangle bounds)
         {
-            Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
-            BitmapData bmpData = bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat);
+            IntPtr hdcScreen = GetDC(IntPtr.Zero);
+            IntPtr hdcMem = CreateCompatibleDC(hdcScreen);
+            IntPtr hBitmap = CreateCompatibleBitmap(hdcScreen, bounds.Width, bounds.Height);
+            IntPtr hOld = SelectObject(hdcMem, hBitmap);
 
-            IntPtr ptr = bmpData.Scan0;
-            int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
-            byte[] rgbValues = new byte[bytes];
+            BitBlt(hdcMem, 0, 0, bounds.Width, bounds.Height, hdcScreen, bounds.X, bounds.Y, SRCCOPY);
 
-            Marshal.Copy(ptr, rgbValues, 0, bytes);
+            Bitmap bmp = Image.FromHbitmap(hBitmap);
 
-            for (int counter = 0; counter < rgbValues.Length; counter += 4)
-            {
-                byte b = rgbValues[counter];
-                byte g = rgbValues[counter + 1];
-                byte r = rgbValues[counter + 2];
+            SelectObject(hdcMem, hOld);
+            DeleteDC(hdcMem);
+            ReleaseDC(IntPtr.Zero, hdcScreen);
+            DeleteObject(hBitmap);
 
-                rgbValues[counter + 3] = 255; 
-
-                if (r <= 10 && g <= 10 && b <= 10)
-                {
-                    rgbValues[counter] = 0;     
-                    rgbValues[counter + 1] = 0; 
-                    rgbValues[counter + 2] = 0; 
-                }
-            }
-
-            Marshal.Copy(rgbValues, 0, ptr, bytes);
-            bmp.UnlockBits(bmpData);
+            return bmp;
         }
 
         private void SaveAndCopy(Bitmap bmp)
         {
-            SanitizeBitmapPixels(bmp);
-
             string savePath = GetSavePath();
             bmp.Save(savePath, ImageFormat.Png);
-
+            
             using (MemoryStream ms = new MemoryStream())
             {
                 bmp.Save(ms, ImageFormat.Png);
@@ -165,7 +169,6 @@ namespace screenshot
                 DataObject dataObject = new DataObject();
                 dataObject.SetData("PNG", false, new MemoryStream(buffer));
                 dataObject.SetData(DataFormats.Bitmap, true, bmp);
-                
                 Clipboard.SetDataObject(dataObject, true);
             }
 
@@ -185,40 +188,29 @@ namespace screenshot
             }
             catch
             {
-                // чтоб не падать изза звук
+                // звук
             }
 
             bmp.Dispose();
-            GC.Collect();
         }
 
         private void CaptureFullScreen()
         {
             Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
-            Bitmap bmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(bmp))
-            {
-                g.CopyFromScreen(bounds.X, bounds.Y, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
-            }
+            Bitmap bmp = CaptureScreenWithBitBlt(bounds);
             SaveAndCopy(bmp);
         }
 
         private void CaptureArea()
         {
             Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
-            Bitmap screenShot = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(screenShot))
-            {
-                g.CopyFromScreen(bounds.X, bounds.Y, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
-            }
-
-            SanitizeBitmapPixels(screenShot);
-
+            Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
+            
             using (var overlay = new OverlayForm(screenShot, false))
             {
                 if (overlay.ShowDialog() == DialogResult.OK && overlay.SelectedArea.Width > 5 && overlay.SelectedArea.Height > 5)
                 {
-                    Bitmap cropped = new Bitmap(overlay.SelectedArea.Width, overlay.SelectedArea.Height, PixelFormat.Format32bppArgb);
+                    Bitmap cropped = new Bitmap(overlay.SelectedArea.Width, overlay.SelectedArea.Height, PixelFormat.Format24bppRgb);
                     using (Graphics g = Graphics.FromImage(cropped))
                     {
                         g.InterpolationMode = InterpolationMode.NearestNeighbor;
@@ -235,14 +227,8 @@ namespace screenshot
         private void StartPicker()
         {
             Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
-            Bitmap screenShot = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(screenShot))
-            {
-                g.CopyFromScreen(bounds.X, bounds.Y, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
-            }
-
-            SanitizeBitmapPixels(screenShot);
-
+            Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
+            
             using (var overlay = new OverlayForm(screenShot, true))
             {
                 if (overlay.ShowDialog() == DialogResult.OK)
@@ -295,21 +281,24 @@ namespace screenshot
     {
         private const int WM_RBUTTONDOWN = 0x0204;
         private const int WM_RBUTTONUP   = 0x0205;
-
+        
         private readonly Bitmap background;
         private readonly bool isColorPicker;
         
+        private readonly byte[] backgroundPixels;
+        private readonly int backgroundStride;
+
         private readonly List<DrawAction> actions = new List<DrawAction>();
         private PenAction? currentPenAction;
-
         private Point startPoint;
+        
         private bool isDrawing = false;
         private bool isDrawingWithPen = false;
         private bool isDrawingRectangle = false; 
         private bool isCtrlPressed = false;
         private bool isAltPressed = false;        
-        
         private Rectangle currentAltRect;         
+
         public Rectangle SelectedArea { get; private set; }
         public string SelectedColorHex { get; private set; } = "#000000";
         private Color currentMouseColor = Color.Black;
@@ -328,8 +317,27 @@ namespace screenshot
             this.TopMost = true;
             this.ShowInTaskbar = false;
             this.KeyPreview = true; 
-            
             this.TransparencyKey = Color.Empty;
+
+            Rectangle rect = new Rectangle(0, 0, bg.Width, bg.Height);
+            BitmapData bmpData = bg.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            backgroundStride = bmpData.Stride;
+            backgroundPixels = new byte[Math.Abs(bmpData.Stride) * bg.Height];
+            Marshal.Copy(bmpData.Scan0, backgroundPixels, 0, backgroundPixels.Length);
+            bg.UnlockBits(bmpData);
+        }
+
+        private Color GetPixelColor(int x, int y)
+        {
+            if (x < 0 || x >= background.Width || y < 0 || y >= background.Height)
+                return Color.Black;
+
+            int index = y * backgroundStride + x * 3; // 3 б/п. Format24bppRgb
+            byte b = backgroundPixels[index];
+            byte g = backgroundPixels[index + 1];
+            byte r = backgroundPixels[index + 2];
+            
+            return Color.FromArgb(r, g, b);
         }
 
         private void UndoLastAction()
@@ -355,31 +363,15 @@ namespace screenshot
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            if (e.Control)
-            {
-                isCtrlPressed = true;
-                this.Invalidate(); 
-            }
-            if (e.Alt)
-            {
-                isAltPressed = true;
-                this.Invalidate(); 
-            }
+            if (e.Control) { isCtrlPressed = true; this.Invalidate(); }
+            if (e.Alt) { isAltPressed = true; this.Invalidate(); }
             base.OnKeyDown(e);
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
         {
-            if (!e.Control)
-            {
-                isCtrlPressed = false;
-                this.Invalidate(); 
-            }
-            if (!e.Alt)
-            {
-                isAltPressed = false;
-                this.Invalidate(); 
-            }
+            if (!e.Control) { isCtrlPressed = false; this.Invalidate(); }
+            if (!e.Alt) { isAltPressed = false; this.Invalidate(); }
             base.OnKeyUp(e);
         }
 
@@ -390,7 +382,6 @@ namespace screenshot
                 m.Result = IntPtr.Zero;
                 return;
             }
-
             if (m.Msg == WM_RBUTTONUP)
             {
                 if (isDrawing || SelectedArea.Width > 0 || isDrawingRectangle)
@@ -406,21 +397,19 @@ namespace screenshot
                     this.DialogResult = DialogResult.Cancel;
                     this.Close();
                 }
-
                 m.Result = IntPtr.Zero;
                 return;
             }
-
             base.WndProc(ref m);
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             if (background == null) return;
-
+            
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             e.Graphics.DrawImage(background, 0, 0);
-
+            
             foreach (var action in actions)
             {
                 action.Draw(e.Graphics);
@@ -451,7 +440,6 @@ namespace screenshot
                     e.Graphics.FillRectangle(dimBrush, SelectedArea.Right, SelectedArea.Top, this.Width - SelectedArea.Right, SelectedArea.Height);
                     e.Graphics.FillRectangle(dimBrush, 0, SelectedArea.Bottom, this.Width, this.Height - SelectedArea.Bottom);
                 }
-
                 using (Pen pen = new Pen(Color.Cyan, 1))
                 {
                     e.Graphics.DrawRectangle(pen, SelectedArea);
@@ -476,11 +464,8 @@ namespace screenshot
 
             if (isColorPicker)
             {
-                if (e.X >= 0 && e.X < background.Width && e.Y >= 0 && e.Y < background.Height)
-                {
-                    currentMouseColor = background.GetPixel(e.X, e.Y);
-                    this.Invalidate();
-                }
+                currentMouseColor = GetPixelColor(e.X, e.Y);
+                this.Invalidate();
             }
             else if (isDrawingWithPen && currentPenAction != null)
             {
@@ -513,7 +498,7 @@ namespace screenshot
             {
                 if (isColorPicker)
                 {
-                    Color c = background.GetPixel(e.X, e.Y);
+                    Color c = GetPixelColor(e.X, e.Y);
                     SelectedColorHex = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
                     this.DialogResult = DialogResult.OK;
                     this.Close();
