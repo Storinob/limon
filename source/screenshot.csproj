@@ -7,13 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>limon</AssemblyName>
 	<ApplicationIcon>limon.ico</ApplicationIcon>
-	<Title>limon</Title>
-    <Product>limon utility</Product>
-    <Description>limon utility</Description>
+    <Product>limon uttility</Product>
+    <Company>b1no</Company>
     <Authors>b1no</Authors>
-  	<Copyright>b1no © 2026</Copyright>
-  	<AssemblyVersion>4.2</AssemblyVersion>
-  	<Version>4.2</Version>
+    <Copyright>© 2026 b1no</Copyright>
+  	<AssemblyVersion>4.3</AssemblyVersion>
+    <FileVersion>4.3</FileVersion>
+  	<Version>4.3</Version>
+    <InformationalVersion>Stable</InformationalVersion>
+	<RepositoryUrl>https://github.com/Storinob/limon</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="done.wav" />
