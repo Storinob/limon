@@ -4,6 +4,8 @@
 
 A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other screenshot programs (there is also an eyedropper function for copying colour from the screen). This program works in the background without an icon on the taskbar.
 
+First of all, I built this utility for myself, but I also prepared it for public use. Ready to download and run the `.exe` file is in the repository.
+
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
 ![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
 [![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
