@@ -1,4 +1,4 @@
-# Screenshot
+# limon
 
 A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other programs. It runs in the background without an icon in the taskbar.
 
