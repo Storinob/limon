@@ -1,6 +1,6 @@
 # limon
 
-<img width="250" height="250" alt="limon-logo" src="https://github.com/user-attachments/assets/b77f9266-c3b5-4c43-b0ac-9c3af20f0b58" />
+<img width="250" height="250" alt="logo-gh" src="https://github.com/user-attachments/assets/26eee073-d543-43f7-8e32-4c8b78c00df9" />
 
 A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other programs.
 It has a screenshot function and a colour eyedropper, and it runs in the background without an icon in the taskbar.
