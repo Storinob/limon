@@ -1,0 +1,28 @@
+name: Send Discord Release Announcement
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Webhook to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          # Подготовка текста релиза и экранирование спецсимволов для JSON
+          NOTES=$(echo "${{ github.event.release.body }}" | jq -sR .)
+          TITLE=$(echo "${{ github.event.release.name }}" | jq -sR .)
+          TAG="${{ github.event.release.tag_name }}"
+
+          # Формирование JSON-пакета для Discord
+          cat << EOF > payload.json
+          {
+            "content": "<@&ROLE_ID>\n# limon - $TITLE\n$NOTES\n\nhttps://github.com/Storinob/limon/releases/tag/$TAG"
+          }
+          EOF
+
+          # Отправка вебхука
+          curl -H "Content-Type: application/json" -X POST -d @payload.json $DISCORD_WEBHOOK
