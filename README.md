@@ -1,6 +1,13 @@
 # limon
 
-A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other programs. It runs in the background without an icon in the taskbar.
+<img width="250" height="250" alt="limon-logo" src="https://github.com/user-attachments/assets/b77f9266-c3b5-4c43-b0ac-9c3af20f0b58" />
+
+A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other programs.
+It has a screenshot function and a colour eyedropper, and it runs in the background without an icon in the taskbar.
+
+[![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
+![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
+[![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
 
 ## Features
 
@@ -18,6 +25,9 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other progra
 
 ## Build
 
+[![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
+![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
