@@ -8,19 +8,14 @@ jobs:
   announce:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Webhook to Discord
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          RELEASE_TITLE: ${{ github.event.release.name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_BODY: ${{ github.event.release.body }}
-        run: |
-          printf "%s" "$RELEASE_BODY" > body.txt
+      - name: Send Discord Message
+        uses: appleboy/discord-action@master
+        with:
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+          message: |
+            @code-update
+            # limon - ${{ github.event.release.name }}
+            ${{ github.event.release.body }}
 
-          jq -n \
-            --arg title "$RELEASE_TITLE" \
-            --arg tag "$RELEASE_TAG" \
-            --rawfile body body.txt \
-            '{content: ("@code-update\n# limon - " + $title + "\n" + $body + "\n\nhttps://github.com/Storinob/limon/releases/tag/" + $tag)}' > payload.json
-
-          curl -H "Content-Type: application/json" -X POST -d @payload.json $DISCORD_WEBHOOK
+            https://github.com/Storinob/limon/releases/tag/${{ github.event.release.tag_name }}
