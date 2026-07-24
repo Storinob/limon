@@ -28,6 +28,8 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other screen
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+
+Command must be executed inside the project folder
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
