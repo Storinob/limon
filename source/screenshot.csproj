@@ -6,8 +6,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>limon</AssemblyName>
-	  <ApplicationIcon>limon.ico</ApplicationIcon>
-	  <Title>limon</Title>
+	<ApplicationIcon>limon.ico</ApplicationIcon>
+	<Title>limon</Title>
     <Product>limon utility</Product>
     <Description>limon utility</Description>
     <Authors>b1no</Authors>
