@@ -20,7 +20,7 @@ jobs:
           # Формирование JSON-пакета для Discord
           cat << EOF > payload.json
           {
-            "content": "<@&ROLE_ID>\n# limon - $TITLE\n$NOTES\n\nhttps://github.com/Storinob/limon/releases/tag/$TAG"
+            "content": "<@code-update>\n# limon - $TITLE\n$NOTES\n\nhttps://github.com/Storinob/limon/releases/tag/$TAG"
           }
           EOF
 
