@@ -11,16 +11,16 @@ jobs:
       - name: Send Webhook to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          TITLE: ${{ github.event.release.name }}
-          NOTES: ${{ github.event.release.body }}
-          TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TITLE: ${{ github.event.release.name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
         run: |
-          TEXT="@code-update
-          # limon - $TITLE
-          $NOTES
+          printf "%s" "$RELEASE_BODY" > body.txt
 
-          https://github.com/Storinob/limon/releases/tag/$TAG"
-
-          jq -n --arg content "$TEXT" '{content: $content}' > payload.json
+          jq -n \
+            --arg title "$RELEASE_TITLE" \
+            --arg tag "$RELEASE_TAG" \
+            --rawfile body body.txt \
+            '{content: ("@code-update\n# limon - " + $title + "\n" + $body + "\n\nhttps://github.com/Storinob/limon/releases/tag/" + $tag)}' > payload.json
 
           curl -H "Content-Type: application/json" -X POST -d @payload.json $DISCORD_WEBHOOK
