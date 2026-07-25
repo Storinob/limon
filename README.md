@@ -6,6 +6,7 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other screen
 
 First of all, I built this utility for myself, but I also prepared it for public use. Ready to download and run the `.exe` file is in the repository.
 
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
 ![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
 [![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
@@ -28,7 +29,6 @@ First of all, I built this utility for myself, but I also prepared it for public
 ## Build
 
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
-![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
 
 Command must be executed inside the project folder
