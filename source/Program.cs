@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using System.Text;
 
 namespace screenshot
 {
@@ -88,7 +87,7 @@ namespace screenshot
         [DllImport("user32.dll")]
         private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
 
-        private const uint SRCCOPY = 0x00CC0020;
+        private const uint SRCCOPY = 0x40CC0020;
 
         public HiddenForm()
         {
@@ -196,14 +195,14 @@ namespace screenshot
 
         private void CaptureFullScreen()
         {
-            Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
+            Rectangle bounds = SystemInformation.VirtualScreen;
             Bitmap bmp = CaptureScreenWithBitBlt(bounds);
             SaveAndCopy(bmp);
         }
 
         private void CaptureArea()
         {
-            Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
+            Rectangle bounds = SystemInformation.VirtualScreen;
             Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
             
             using (var overlay = new OverlayForm(screenShot, false))
@@ -226,7 +225,7 @@ namespace screenshot
 
         private void StartPicker()
         {
-            Rectangle bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
+            Rectangle bounds = SystemInformation.VirtualScreen;
             Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
             
             using (var overlay = new OverlayForm(screenShot, true))
@@ -277,6 +276,23 @@ namespace screenshot
         }
     }
 
+    class HollowRectAction : DrawAction
+    {
+        public Rectangle Rect { get; set; }
+        public Color Color { get; set; } = Color.Red;
+        public float Width { get; set; } = 3f;
+
+        public override void Draw(Graphics g)
+        {
+            if (Rect.Width <= 0 || Rect.Height <= 0) return;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (Pen pen = new Pen(Color, Width) { LineJoin = LineJoin.Round })
+            {
+                g.DrawRectangle(pen, Rect);
+            }
+        }
+    }
+
     class OverlayForm : Form
     {
         private const int WM_RBUTTONDOWN = 0x0204;
@@ -295,14 +311,26 @@ namespace screenshot
         private bool isDrawing = false;
         private bool isDrawingWithPen = false;
         private bool isDrawingRectangle = false; 
+        private bool isDrawingHollowRectangle = false; 
+        
         private bool isCtrlPressed = false;
         private bool isAltPressed = false;        
+        private bool isShiftPressed = false; 
+        
         private Rectangle currentAltRect;         
+        private Rectangle currentShiftRect; 
 
         public Rectangle SelectedArea { get; private set; }
         public string SelectedColorHex { get; private set; } = "#000000";
         private Color currentMouseColor = Color.Black;
         private Point mousePos;
+
+        private readonly SolidBrush dimOverlayBrush = new SolidBrush(Color.FromArgb(60, Color.Black));
+        private readonly SolidBrush dimSelectedBrush = new SolidBrush(Color.FromArgb(100, Color.Black));
+        private readonly Pen cyanPen = new Pen(Color.Cyan, 1);
+        private readonly SolidBrush maroonBrush = new SolidBrush(Color.Maroon);
+        private readonly Pen whitePen = new Pen(Color.White, 1);
+        private readonly Pen redPen = new Pen(Color.Red, 3f) { LineJoin = LineJoin.Round };
 
         public OverlayForm(Bitmap bg, bool colorPicker)
         {
@@ -311,7 +339,7 @@ namespace screenshot
             
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
-            this.Bounds = Screen.PrimaryScreen?.Bounds ?? SystemInformation.VirtualScreen;
+            this.Bounds = SystemInformation.VirtualScreen;
             this.DoubleBuffered = true;
             this.Cursor = Cursors.Cross;
             this.TopMost = true;
@@ -327,12 +355,26 @@ namespace screenshot
             bg.UnlockBits(bmpData);
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                dimOverlayBrush.Dispose();
+                dimSelectedBrush.Dispose();
+                cyanPen.Dispose();
+                maroonBrush.Dispose();
+                whitePen.Dispose();
+                redPen.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
         private Color GetPixelColor(int x, int y)
         {
             if (x < 0 || x >= background.Width || y < 0 || y >= background.Height)
                 return Color.Black;
 
-            int index = y * backgroundStride + x * 3; // 3 б/п. Format24bppRgb
+            int index = y * backgroundStride + x * 3;
             byte b = backgroundPixels[index];
             byte g = backgroundPixels[index + 1];
             byte r = backgroundPixels[index + 2];
@@ -365,6 +407,7 @@ namespace screenshot
         {
             if (e.Control) { isCtrlPressed = true; this.Invalidate(); }
             if (e.Alt) { isAltPressed = true; this.Invalidate(); }
+            if (e.Shift) { isShiftPressed = true; this.Invalidate(); } 
             base.OnKeyDown(e);
         }
 
@@ -372,6 +415,7 @@ namespace screenshot
         {
             if (!e.Control) { isCtrlPressed = false; this.Invalidate(); }
             if (!e.Alt) { isAltPressed = false; this.Invalidate(); }
+            if (!e.Shift) { isShiftPressed = false; this.Invalidate(); } 
             base.OnKeyUp(e);
         }
 
@@ -384,12 +428,14 @@ namespace screenshot
             }
             if (m.Msg == WM_RBUTTONUP)
             {
-                if (isDrawing || SelectedArea.Width > 0 || isDrawingRectangle)
+                if (isDrawing || SelectedArea.Width > 0 || isDrawingRectangle || isDrawingHollowRectangle)
                 {
                     isDrawing = false;
                     isDrawingRectangle = false;
+                    isDrawingHollowRectangle = false; 
                     SelectedArea = Rectangle.Empty;
                     currentAltRect = Rectangle.Empty;
+                    currentShiftRect = Rectangle.Empty; 
                     this.Invalidate();
                 }
                 else
@@ -418,41 +464,33 @@ namespace screenshot
             if (isColorPicker)
             {
                 using (SolidBrush brush = new SolidBrush(currentMouseColor))
-                using (Pen pen = new Pen(Color.White, 1))
                 {
                     e.Graphics.FillRectangle(brush, mousePos.X + 15, mousePos.Y + 15, 20, 20);
-                    e.Graphics.DrawRectangle(pen, mousePos.X + 15, mousePos.Y + 15, 20, 20);
+                    e.Graphics.DrawRectangle(whitePen, mousePos.X + 15, mousePos.Y + 15, 20, 20);
                 }
             }
             else if (isDrawingRectangle && currentAltRect.Width > 0 && currentAltRect.Height > 0)
             {
-                using (SolidBrush maroonBrush = new SolidBrush(Color.Maroon)) 
-                {
-                    e.Graphics.FillRectangle(maroonBrush, currentAltRect);
-                }
+                e.Graphics.FillRectangle(maroonBrush, currentAltRect);
+            }
+            else if (isDrawingHollowRectangle && currentShiftRect.Width > 0 && currentShiftRect.Height > 0)
+            {
+                e.Graphics.DrawRectangle(redPen, currentShiftRect);
             }
             else if (isDrawing || SelectedArea.Width > 0)
             {
-                using (Brush dimBrush = new SolidBrush(Color.FromArgb(100, Color.Black)))
-                {
-                    e.Graphics.FillRectangle(dimBrush, 0, 0, this.Width, SelectedArea.Top);
-                    e.Graphics.FillRectangle(dimBrush, 0, SelectedArea.Top, SelectedArea.Left, SelectedArea.Height);
-                    e.Graphics.FillRectangle(dimBrush, SelectedArea.Right, SelectedArea.Top, this.Width - SelectedArea.Right, SelectedArea.Height);
-                    e.Graphics.FillRectangle(dimBrush, 0, SelectedArea.Bottom, this.Width, this.Height - SelectedArea.Bottom);
-                }
-                using (Pen pen = new Pen(Color.Cyan, 1))
-                {
-                    e.Graphics.DrawRectangle(pen, SelectedArea);
-                }
+                e.Graphics.FillRectangle(dimSelectedBrush, 0, 0, this.Width, SelectedArea.Top);
+                e.Graphics.FillRectangle(dimSelectedBrush, 0, SelectedArea.Top, SelectedArea.Left, SelectedArea.Height);
+                e.Graphics.FillRectangle(dimSelectedBrush, SelectedArea.Right, SelectedArea.Top, this.Width - SelectedArea.Right, SelectedArea.Height);
+                e.Graphics.FillRectangle(dimSelectedBrush, 0, SelectedArea.Bottom, this.Width, this.Height - SelectedArea.Bottom);
+
+                e.Graphics.DrawRectangle(cyanPen, SelectedArea);
             }
             else
             {
-                if (!isCtrlPressed && !isAltPressed)
+                if (!isCtrlPressed && !isAltPressed && !isShiftPressed)
                 {
-                    using (Brush dimBrush = new SolidBrush(Color.FromArgb(60, Color.Black)))
-                    {
-                        e.Graphics.FillRectangle(dimBrush, 0, 0, this.Width, this.Height);
-                    }
+                    e.Graphics.FillRectangle(dimOverlayBrush, 0, 0, this.Width, this.Height);
                 }
             }
         }
@@ -479,6 +517,15 @@ namespace screenshot
                 int width = Math.Abs(startPoint.X - e.X);
                 int height = Math.Abs(startPoint.Y - e.Y);
                 currentAltRect = new Rectangle(x, y, width, height);
+                this.Invalidate();
+            }
+            else if (isDrawingHollowRectangle)
+            {
+                int x = Math.Min(startPoint.X, e.X);
+                int y = Math.Min(startPoint.Y, e.Y);
+                int width = Math.Abs(startPoint.X - e.X);
+                int height = Math.Abs(startPoint.Y - e.Y);
+                currentShiftRect = new Rectangle(x, y, width, height);
                 this.Invalidate();
             }
             else if (isDrawing)
@@ -516,6 +563,12 @@ namespace screenshot
                     startPoint = e.Location;
                     currentAltRect = Rectangle.Empty;
                 }
+                else if (isShiftPressed)
+                {
+                    isDrawingHollowRectangle = true;
+                    startPoint = e.Location;
+                    currentShiftRect = Rectangle.Empty;
+                }
                 else
                 {
                     isDrawing = true;
@@ -545,6 +598,16 @@ namespace screenshot
                         actions.Add(new RectAction { Rect = currentAltRect, Color = Color.Maroon });
                     }
                     currentAltRect = Rectangle.Empty;
+                    this.Invalidate();
+                }
+                else if (isDrawingHollowRectangle)
+                {
+                    isDrawingHollowRectangle = false;
+                    if (currentShiftRect.Width > 0 && currentShiftRect.Height > 0)
+                    {
+                        actions.Add(new HollowRectAction { Rect = currentShiftRect, Color = Color.Red, Width = 3f });
+                    }
+                    currentShiftRect = Rectangle.Empty;
                     this.Invalidate();
                 }
                 else if (!isColorPicker && isDrawing)
