@@ -20,6 +20,7 @@ First of all, I built this utility for myself, but I also prepared it for public
 * Global Hotkeys:
     * `PrintScreen` — Screenshot of the screen area.
         * `Ctrl + LMB` — Drawing red lines.
+        * `Shift + LMB` — Drawing red rectangle.
         * `Alt + LMB` — Covering the area with a solid maroon rectangle.
         * `Ctrl + Z` or `BackSpace` — Undo drawn.
         * `RMB` or `Esc` — Reset drawn/selection.
