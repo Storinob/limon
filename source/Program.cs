@@ -37,6 +37,8 @@ namespace screenshot
                 }
                 return;
             }
+			
+            KillOldInstances();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -50,6 +52,25 @@ namespace screenshot
             {
                 var principal = new System.Security.Principal.WindowsPrincipal(identity);
                 return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            }
+        }
+
+        private static void KillOldInstances()
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+            Process[] processes = Process.GetProcessesByName(currentProcess.ProcessName);
+            
+            foreach (Process p in processes)
+            {
+                if (p.Id != currentProcess.Id)
+                {
+                    try
+                    {
+                        p.Kill();
+                        p.WaitForExit(1000);
+                    }
+                    catch { }
+                }
             }
         }
     }
@@ -137,23 +158,39 @@ namespace screenshot
         }
 
         private Bitmap CaptureScreenWithBitBlt(Rectangle bounds)
-        {
-            IntPtr hdcScreen = GetDC(IntPtr.Zero);
-            IntPtr hdcMem = CreateCompatibleDC(hdcScreen);
-            IntPtr hBitmap = CreateCompatibleBitmap(hdcScreen, bounds.Width, bounds.Height);
-            IntPtr hOld = SelectObject(hdcMem, hBitmap);
+		{
+			IntPtr hdcScreen = GetDC(IntPtr.Zero);
+			IntPtr hdcMem = CreateCompatibleDC(hdcScreen);
+			IntPtr hBitmap = CreateCompatibleBitmap(hdcScreen, bounds.Width, bounds.Height);
+			IntPtr hOld = SelectObject(hdcMem, hBitmap);
 
-            BitBlt(hdcMem, 0, 0, bounds.Width, bounds.Height, hdcScreen, bounds.X, bounds.Y, SRCCOPY);
+			BitBlt(hdcMem, 0, 0, bounds.Width, bounds.Height, hdcScreen, bounds.X, bounds.Y, SRCCOPY);
+			Bitmap rawBmp = Image.FromHbitmap(hBitmap);
 
-            Bitmap bmp = Image.FromHbitmap(hBitmap);
+			SelectObject(hdcMem, hOld);
+			DeleteDC(hdcMem);
+			ReleaseDC(IntPtr.Zero, hdcScreen);
+			DeleteObject(hBitmap);
 
-            SelectObject(hdcMem, hOld);
-            DeleteDC(hdcMem);
-            ReleaseDC(IntPtr.Zero, hdcScreen);
-            DeleteObject(hBitmap);
-
-            return bmp;
-        }
+			Bitmap finalBmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
+			using (Graphics g = Graphics.FromImage(finalBmp))
+			{
+				g.Clear(Color.Transparent);
+				
+				foreach (Screen screen in Screen.AllScreens)
+				{
+					Rectangle intersect = Rectangle.Intersect(screen.Bounds, bounds);
+					if (!intersect.IsEmpty)
+					{
+						Rectangle rect = new Rectangle(intersect.X - bounds.X, intersect.Y - bounds.Y, intersect.Width, intersect.Height);
+						g.DrawImage(rawBmp, rect, rect, GraphicsUnit.Pixel);
+					}
+				}
+			}
+			
+			rawBmp.Dispose();
+			return finalBmp;
+		}
 
         private void SaveAndCopy(Bitmap bmp)
         {
@@ -201,27 +238,30 @@ namespace screenshot
         }
 
         private void CaptureArea()
-        {
-            Rectangle bounds = SystemInformation.VirtualScreen;
-            Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
-            
-            using (var overlay = new OverlayForm(screenShot, false))
-            {
-                if (overlay.ShowDialog() == DialogResult.OK && overlay.SelectedArea.Width > 5 && overlay.SelectedArea.Height > 5)
-                {
-                    Bitmap cropped = new Bitmap(overlay.SelectedArea.Width, overlay.SelectedArea.Height, PixelFormat.Format24bppRgb);
-                    using (Graphics g = Graphics.FromImage(cropped))
-                    {
-                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
-                        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                        g.CompositingQuality = CompositingQuality.HighQuality;
-                        g.DrawImage(screenShot, new Rectangle(0, 0, cropped.Width, cropped.Height), overlay.SelectedArea, GraphicsUnit.Pixel);
-                    }
-                    SaveAndCopy(cropped);
-                }
-            }
-            screenShot.Dispose();
-        }
+		{
+			Rectangle bounds = SystemInformation.VirtualScreen;
+			Bitmap screenShot = CaptureScreenWithBitBlt(bounds);
+			
+			using (var overlay = new OverlayForm(screenShot, false))
+			{
+				if (overlay.ShowDialog() == DialogResult.OK && overlay.SelectedArea.Width > 5 && overlay.SelectedArea.Height > 5)
+				{
+					Bitmap cropped = new Bitmap(overlay.SelectedArea.Width, overlay.SelectedArea.Height, PixelFormat.Format32bppArgb);
+					using (Graphics g = Graphics.FromImage(cropped))
+					{
+						g.InterpolationMode = InterpolationMode.NearestNeighbor;
+						g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+						g.CompositingQuality = CompositingQuality.HighQuality;
+						g.CompositingMode = CompositingMode.SourceCopy;
+
+						g.Clear(Color.Transparent); 
+						g.DrawImage(screenShot, new Rectangle(0, 0, cropped.Width, cropped.Height), overlay.SelectedArea, GraphicsUnit.Pixel);
+					}
+					SaveAndCopy(cropped);
+				}
+			}
+			screenShot.Dispose();
+		}
 
         private void StartPicker()
         {
@@ -336,7 +376,8 @@ namespace screenshot
         {
             this.background = bg;
             this.isColorPicker = colorPicker;
-            
+			
+			this.BackColor = Color.Black;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
             this.Bounds = SystemInformation.VirtualScreen;
@@ -348,7 +389,7 @@ namespace screenshot
             this.TransparencyKey = Color.Empty;
 
             Rectangle rect = new Rectangle(0, 0, bg.Width, bg.Height);
-            BitmapData bmpData = bg.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            BitmapData bmpData = bg.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             backgroundStride = bmpData.Stride;
             backgroundPixels = new byte[Math.Abs(bmpData.Stride) * bg.Height];
             Marshal.Copy(bmpData.Scan0, backgroundPixels, 0, backgroundPixels.Length);
@@ -374,7 +415,7 @@ namespace screenshot
             if (x < 0 || x >= background.Width || y < 0 || y >= background.Height)
                 return Color.Black;
 
-            int index = y * backgroundStride + x * 3;
+            int index = y * backgroundStride + x * 4;
             byte b = backgroundPixels[index];
             byte g = backgroundPixels[index + 1];
             byte r = backgroundPixels[index + 2];
