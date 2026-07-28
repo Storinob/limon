@@ -32,8 +32,14 @@ First of all, I built this utility for myself, but I also prepared it for public
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
 
-Command must be executed inside the project folder
+Command must be executed inside the project folder.
+
+If you just want to compile a program (~240KB):
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
+```
+If you want to build a program completely independent (packs some libraries into the program itself, increasing its weight to ~160MB. `BASICALLY NOT NEEDED`):
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
 To compile the project, you will need the **.NET 8.0 SDK**.
