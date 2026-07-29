@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -10,10 +10,11 @@
     <Product>limon uttility</Product>
     <Company>b1no</Company>
     <Authors>b1no</Authors>
-    <Copyright>© 2026 b1no</Copyright>
-  	<AssemblyVersion>4.3</AssemblyVersion>
-    <FileVersion>4.3</FileVersion>
-  	<Version>4.3</Version>
+	<Publisher>b1no</Publisher>
+    <Copyright>© 2026 b1no. All rights reserved</Copyright>
+  	<AssemblyVersion>4.4.0</AssemblyVersion>
+    <FileVersion>4.4.0</FileVersion>
+  	<Version>4.4.0</Version>
     <InformationalVersion>Stable</InformationalVersion>
 	<RepositoryUrl>https://github.com/Storinob/limon</RepositoryUrl>
   </PropertyGroup>

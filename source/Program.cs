@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using Microsoft.Win32;
+using System.IO;
 
 namespace screenshot
 {
@@ -39,7 +41,8 @@ namespace screenshot
             }
 			
             KillOldInstances();
-
+			RegisterInInstalledApps();
+			
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             hiddenForm = new HiddenForm();
@@ -73,6 +76,43 @@ namespace screenshot
                 }
             }
         }
+		private static void RegisterInInstalledApps()
+		{
+			try
+			{
+				string? exePath = Environment.ProcessPath;
+				if (string.IsNullOrEmpty(exePath)) return;
+
+				string appDir = Path.GetDirectoryName(exePath) ?? "";
+				string processName = Path.GetFileName(exePath);
+				long sizeInKb = new FileInfo(exePath).Length / 1024;
+				
+				using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+				using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon"))
+				{
+					if (key != null)
+					{
+						key.SetValue("DisplayName", "limon");
+						key.SetValue("Publisher", "b1no");
+						key.SetValue("DisplayIcon", exePath);
+						key.SetValue("DisplayVersion", "4.4");
+						key.SetValue("InstallLocation", appDir);
+						key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
+						key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
+						
+						string uninstallCommand = $"cmd.exe /c reg delete \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\limon\" /f";
+						key.SetValue("UninstallString", uninstallCommand);
+						
+						key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+						key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+					}
+				}
+			}
+			catch
+			{
+				
+			}
+		}
     }
 
     class HiddenForm : Form
