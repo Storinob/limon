@@ -21,7 +21,7 @@ namespace screenshot
         private static HiddenForm? hiddenForm;
 
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             if (!IsRunAsAdmin())
             {
@@ -31,24 +31,106 @@ namespace screenshot
                     procInfo.UseShellExecute = true;
                     procInfo.FileName = Environment.ProcessPath;
                     procInfo.Verb = "runas";
+                    
+                    if (args.Length > 0)
+                    {
+                        procInfo.Arguments = string.Join(" ", args);
+                    }
+                    
                     Process.Start(procInfo);
                 }
-                catch
-                {
-                    // а
-                }
+                catch { }
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "--uninstall")
+            {
+                KillOldInstances();
+                RunSelfUninstall();
+                Environment.Exit(0);
                 return;
             }
 			
             KillOldInstances();
-			RegisterInInstalledApps();
+            RegisterInInstalledApps();
 			
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             hiddenForm = new HiddenForm();
             Application.Run();
         }
+        private static void RegisterInInstalledApps()
+        {
+            try
+            {
+                string? exePath = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(exePath)) return;
 
+                string appDir = Path.GetDirectoryName(exePath) ?? "";
+                long sizeInKb = new FileInfo(exePath).Length / 1024;
+                
+                using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (RegistryKey key = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon"))
+                {
+                    if (key != null)
+                    {
+                        key.SetValue("DisplayName", "limon");
+                        key.SetValue("Publisher", "b1no");
+                        key.SetValue("DisplayIcon", exePath);
+                        key.SetValue("DisplayVersion", "4.4");
+                        key.SetValue("InstallLocation", appDir);
+                        key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
+                        key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
+                        
+                        string uninstallCommand = $"\"{exePath}\" --uninstall";
+                        key.SetValue("UninstallString", uninstallCommand, RegistryValueKind.String);
+                        key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+                        key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+                    }
+                }
+            }
+            catch
+            {
+				
+			}
+        }
+        private static void RunSelfUninstall()
+        {
+            try
+            {
+                string? exePath = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(exePath)) return;
+
+                string processName = Path.GetFileName(exePath);
+                string batchPath = Path.Combine(Path.GetTempPath(), "limon-uninstaller.bat");
+
+                string batContent = 
+                    "@echo off\r\n" +
+                    ":loop\r\n" +
+                    $"taskkill /f /im \"{processName}\" >nul 2>&1\r\n" +
+                    "timeout /t 2 >nul\r\n" +
+                    "del /f /q \"%~1\" >nul 2>&1\r\n" +
+                    "if exist \"%~1\" (\r\n" +
+                    "    goto loop\r\n" +
+                    ")\r\n" +
+                    "reg delete \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\limon\" /f >nul 2>&1\r\n" +
+                    "del \"%~f0\"\r\n";
+
+                File.WriteAllText(batchPath, batContent, System.Text.Encoding.Default);
+
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = batchPath,
+                    Arguments = $"\"{exePath}\"",
+                    UseShellExecute = true,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+
+                Process.Start(psi);
+            }
+            catch { }
+        }
         private static bool IsRunAsAdmin()
         {
             using (var identity = System.Security.Principal.WindowsIdentity.GetCurrent())
@@ -57,7 +139,6 @@ namespace screenshot
                 return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
             }
         }
-
         private static void KillOldInstances()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -76,43 +157,6 @@ namespace screenshot
                 }
             }
         }
-		private static void RegisterInInstalledApps()
-		{
-			try
-			{
-				string? exePath = Environment.ProcessPath;
-				if (string.IsNullOrEmpty(exePath)) return;
-
-				string appDir = Path.GetDirectoryName(exePath) ?? "";
-				string processName = Path.GetFileName(exePath);
-				long sizeInKb = new FileInfo(exePath).Length / 1024;
-				
-				using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-				using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon"))
-				{
-					if (key != null)
-					{
-						key.SetValue("DisplayName", "limon");
-						key.SetValue("Publisher", "b1no");
-						key.SetValue("DisplayIcon", exePath);
-						key.SetValue("DisplayVersion", "4.4");
-						key.SetValue("InstallLocation", appDir);
-						key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
-						key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
-						
-						string uninstallCommand = $"cmd.exe /c reg delete \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\limon\" /f";
-						key.SetValue("UninstallString", uninstallCommand);
-						
-						key.SetValue("NoModify", 1, RegistryValueKind.DWord);
-						key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
-					}
-				}
-			}
-			catch
-			{
-				
-			}
-		}
     }
 
     class HiddenForm : Form
