@@ -9,7 +9,6 @@ First of all, I built this utility for myself, but I also prepared it for public
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
 ![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
-[![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
 
 
 ## Features
@@ -31,6 +30,7 @@ First of all, I built this utility for myself, but I also prepared it for public
 
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+[![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
 
 Command must be executed inside the project folder.
 
