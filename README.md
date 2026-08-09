@@ -8,13 +8,12 @@ First of all, I built this utility for myself, but I also prepared it for public
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
-![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
 
 
 ## Features
 
 * Utility independently requests administrator rights at startup to avoid conflicts with programs that have a higher priority in the system, such as Task Manager, etc.
-* The utility saves screenshots in the `C:\Users\user\Pictures\screenshots\{month_year}` folder with a random 8-character alphanumeric name.
+* The utility saves screenshots in the `C:\Users\{user}\Pictures\screenshots\{month_year}` folder with a random 8-character alphanumeric name.
 * After taking a screenshot, the program plays the `done.wav` sound.
 * Global Hotkeys:
     * `PrintScreen` — Screenshot of the screen area.
@@ -31,6 +30,7 @@ First of all, I built this utility for myself, but I also prepared it for public
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
 [![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon?color=brightgreen&label=updated)](https://github.com/Storinob/limon/commits/main)
+![Repo Size](https://img.shields.io/github/repo-size/Storinob/limon?color=orange)
 
 Command must be executed inside the project folder.
 
