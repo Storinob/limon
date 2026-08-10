@@ -8,6 +8,7 @@ First of all, I built this utility for myself, but I also prepared it for public
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
+[![Last Commit](https://img.shields.io/github/last-commit/Storinob/limon)](https://github.com/Storinob/limon/commits)
 
 
 ## Features
