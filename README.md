@@ -20,7 +20,7 @@ First of all, I built this utility for myself, but I also prepared it for public
         * `Ctrl + LMB` — Drawing red lines.
         * `Shift + LMB` — Drawing red rectangle.
         * `Alt + LMB` — Covering the area with a solid maroon rectangle.
-        * `Ctrl + Z` or `BackSpace` — Undo drawn.
+        * `Z` or `BackSpace` — Undo drawn.
         * `RMB` or `Esc` — Reset drawn/selection.
     * `Shift + PrintScreen` — Instant screenshot of the entire screen.
     * `Ctrl + PrintScreen` — Dropper (Color Picker). Left-click copies the HEX code of the colour to the clipboard.
