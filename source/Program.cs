@@ -747,7 +747,6 @@ namespace screenshot
                 }
             }
         }
-
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Escape)
@@ -756,7 +755,7 @@ namespace screenshot
                 this.Close();
                 return true;
             }
-            if (keyData == Keys.Back || keyData == (Keys.Control | Keys.Z))
+            if (keyData == Keys.Back || keyData == Keys.Z)
             {
                 UndoLastAction();
                 return true;
