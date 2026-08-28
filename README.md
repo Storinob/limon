@@ -38,7 +38,7 @@ If you just want to compile a program (~240KB):
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
-If you want to build a program completely independent (packs some libraries into the program itself, increasing its weight to ~160MB. `BASICALLY NOT NEEDED`):
+If you want to build a program completely independent (packs some libraries into the program itself, increasing its weight to ~160MB. **Basically, not needed for u and in most cases the first option is suitable.**):
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
