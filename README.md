@@ -6,7 +6,8 @@ A lightweight C# (.NET 8.0) utility as a replacement for ShareX and other screen
 
 First of all, I built this utility for myself, but I also prepared it for public use. Ready to download and run the `.exe` file is in the repository.
 
-![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Windows_10-0078D6?logo=windows&logoColor=white)
+~~![Platform](https://img.shields.io/badge/platform-Linux-0078D6?logo=linux&logoColor=white)~~
 [![Latest Release](https://img.shields.io/github/v/release/Storinob/limon?color=007acc&label=release)](https://github.com/Storinob/limon/releases/)
 
 
