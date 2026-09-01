@@ -12,9 +12,9 @@
     <Authors>b1no</Authors>
 	<Publisher>b1no</Publisher>
     <Copyright>© 2026 b1no. All rights reserved</Copyright>
-  	<AssemblyVersion>4.5.0</AssemblyVersion>
-    <FileVersion>4.5.0</FileVersion>
-  	<Version>4.5.0</Version>
+  	<AssemblyVersion>4.6.0</AssemblyVersion>
+    <FileVersion>4.6.0</FileVersion>
+  	<Version>4.6.0</Version>
     <InformationalVersion>Stable</InformationalVersion>
 	<RepositoryUrl>https://github.com/Storinob/limon</RepositoryUrl>
   </PropertyGroup>

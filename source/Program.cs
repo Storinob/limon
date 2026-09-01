@@ -1,15 +1,9 @@
-using System;
-using System.IO;
-using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Collections.Generic;
 using Microsoft.Win32;
-using System.IO;
 
 namespace screenshot
 {
@@ -27,11 +21,13 @@ namespace screenshot
             {
                 try
                 {
-                    ProcessStartInfo procInfo = new ProcessStartInfo();
-                    procInfo.UseShellExecute = true;
-                    procInfo.FileName = Environment.ProcessPath;
-                    procInfo.Verb = "runas";
-                    
+                    ProcessStartInfo procInfo = new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = Environment.ProcessPath,
+                        Verb = "runas"
+                    };
+
                     if (args.Length > 0)
                     {
                         procInfo.Arguments = string.Join(" ", args);
@@ -68,25 +64,23 @@ namespace screenshot
 
                 string appDir = Path.GetDirectoryName(exePath) ?? "";
                 long sizeInKb = new FileInfo(exePath).Length / 1024;
-                
-                using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                using (RegistryKey key = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon"))
+
+                using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+                using RegistryKey key = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon");
+                if (key != null)
                 {
-                    if (key != null)
-                    {
-                        key.SetValue("DisplayName", "limon");
-                        key.SetValue("Publisher", "b1no");
-                        key.SetValue("DisplayIcon", exePath);
-                        key.SetValue("DisplayVersion", "4.4");
-                        key.SetValue("InstallLocation", appDir);
-                        key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
-                        key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
-                        
-                        string uninstallCommand = $"\"{exePath}\" --uninstall";
-                        key.SetValue("UninstallString", uninstallCommand, RegistryValueKind.String);
-                        key.SetValue("NoModify", 1, RegistryValueKind.DWord);
-                        key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
-                    }
+                    key.SetValue("DisplayName", "limon");
+                    key.SetValue("Publisher", "b1no");
+                    key.SetValue("DisplayIcon", exePath);
+                    key.SetValue("DisplayVersion", "4.4");
+                    key.SetValue("InstallLocation", appDir);
+                    key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
+                    key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
+
+                    string uninstallCommand = $"\"{exePath}\" --uninstall";
+                    key.SetValue("UninstallString", uninstallCommand, RegistryValueKind.String);
+                    key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+                    key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
                 }
             }
             catch
@@ -133,11 +127,9 @@ namespace screenshot
         }
         private static bool IsRunAsAdmin()
         {
-            using (var identity = System.Security.Principal.WindowsIdentity.GetCurrent())
-            {
-                var principal = new System.Security.Principal.WindowsPrincipal(identity);
-                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-            }
+            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         }
         private static void KillOldInstances()
         {
@@ -196,15 +188,15 @@ namespace screenshot
 
         public HiddenForm()
         {
-            this.ShowInTaskbar = false;
-            this.WindowState = FormWindowState.Minimized;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.Width = 0;
-            this.Height = 0;
+            ShowInTaskbar = false;
+            WindowState = FormWindowState.Minimized;
+            FormBorderStyle = FormBorderStyle.None;
+            Width = 0;
+            Height = 0;
 
-            Program.RegisterHotKey(this.Handle, 1, MOD_NONE, VK_PRINTSCREEN);
-            Program.RegisterHotKey(this.Handle, 2, MOD_SHIFT, VK_PRINTSCREEN);
-            Program.RegisterHotKey(this.Handle, 3, MOD_CONTROL, VK_PRINTSCREEN);
+            Program.RegisterHotKey(Handle, 1, MOD_NONE, VK_PRINTSCREEN);
+            Program.RegisterHotKey(Handle, 2, MOD_SHIFT, VK_PRINTSCREEN);
+            Program.RegisterHotKey(Handle, 3, MOD_CONTROL, VK_PRINTSCREEN);
         }
 
         protected override void SetVisibleCore(bool value)
@@ -295,15 +287,11 @@ namespace screenshot
             try
             {
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                using (Stream? soundStream = assembly.GetManifestResourceStream("screenshot.done.wav"))
+                using Stream? soundStream = assembly.GetManifestResourceStream("screenshot.done.wav");
+                if (soundStream != null)
                 {
-                    if (soundStream != null)
-                    {
-                        using (System.Media.SoundPlayer player = new System.Media.SoundPlayer(soundStream))
-                        {
-                            player.Play(); 
-                        }
-                    }
+                    using System.Media.SoundPlayer player = new System.Media.SoundPlayer(soundStream);
+                    player.Play();
                 }
             }
             catch
@@ -378,10 +366,8 @@ namespace screenshot
         {
             if (Points.Count < 2) return;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (Pen pen = new Pen(Color, Width) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-            {
-                g.DrawLines(pen, Points.ToArray());
-            }
+            using Pen pen = new Pen(Color, Width) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+            g.DrawLines(pen, Points.ToArray());
         }
     }
 
@@ -393,10 +379,8 @@ namespace screenshot
         public override void Draw(Graphics g)
         {
             if (Rect.Width <= 0 || Rect.Height <= 0) return;
-            using (SolidBrush brush = new SolidBrush(Color))
-            {
-                g.FillRectangle(brush, Rect);
-            }
+            using SolidBrush brush = new SolidBrush(Color);
+            g.FillRectangle(brush, Rect);
         }
     }
 
@@ -410,10 +394,8 @@ namespace screenshot
         {
             if (Rect.Width <= 0 || Rect.Height <= 0) return;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (Pen pen = new Pen(Color, Width) { LineJoin = LineJoin.Round })
-            {
-                g.DrawRectangle(pen, Rect);
-            }
+            using Pen pen = new Pen(Color, Width) { LineJoin = LineJoin.Round };
+            g.DrawRectangle(pen, Rect);
         }
     }
 
@@ -458,19 +440,19 @@ namespace screenshot
 
         public OverlayForm(Bitmap bg, bool colorPicker)
         {
-            this.background = bg;
-            this.isColorPicker = colorPicker;
+            background = bg;
+            isColorPicker = colorPicker;
 			
-			this.BackColor = Color.Black;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.StartPosition = FormStartPosition.Manual;
-            this.Bounds = SystemInformation.VirtualScreen;
-            this.DoubleBuffered = true;
-            this.Cursor = Cursors.Cross;
-            this.TopMost = true;
-            this.ShowInTaskbar = false;
-            this.KeyPreview = true; 
-            this.TransparencyKey = Color.Empty;
+			BackColor = Color.Black;
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.Manual;
+            Bounds = SystemInformation.VirtualScreen;
+            DoubleBuffered = true;
+            Cursor = Cursors.Cross;
+            TopMost = true;
+            ShowInTaskbar = false;
+            KeyPreview = true; 
+            TransparencyKey = Color.Empty;
 
             Rectangle rect = new Rectangle(0, 0, bg.Width, bg.Height);
             BitmapData bmpData = bg.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -512,35 +494,33 @@ namespace screenshot
             if (actions.Count > 0)
             {
                 actions.RemoveAt(actions.Count - 1);
-                this.Invalidate();
+                Invalidate();
             }
         }
 
         private void BakeActionsToBackground()
         {
             if (actions.Count == 0 || background == null) return;
-            using (Graphics g = Graphics.FromImage(background))
+            using Graphics g = Graphics.FromImage(background);
+            foreach (var action in actions)
             {
-                foreach (var action in actions)
-                {
-                    action.Draw(g);
-                }
+                action.Draw(g);
             }
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            if (e.Control) { isCtrlPressed = true; this.Invalidate(); }
-            if (e.Alt) { isAltPressed = true; this.Invalidate(); }
-            if (e.Shift) { isShiftPressed = true; this.Invalidate(); } 
+            if (e.Control) { isCtrlPressed = true; Invalidate(); }
+            if (e.Alt) { isAltPressed = true; Invalidate(); }
+            if (e.Shift) { isShiftPressed = true; Invalidate(); } 
             base.OnKeyDown(e);
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
         {
-            if (!e.Control) { isCtrlPressed = false; this.Invalidate(); }
-            if (!e.Alt) { isAltPressed = false; this.Invalidate(); }
-            if (!e.Shift) { isShiftPressed = false; this.Invalidate(); } 
+            if (!e.Control) { isCtrlPressed = false; Invalidate(); }
+            if (!e.Alt) { isAltPressed = false; Invalidate(); }
+            if (!e.Shift) { isShiftPressed = false; Invalidate(); } 
             base.OnKeyUp(e);
         }
 
@@ -561,12 +541,12 @@ namespace screenshot
                     SelectedArea = Rectangle.Empty;
                     currentAltRect = Rectangle.Empty;
                     currentShiftRect = Rectangle.Empty; 
-                    this.Invalidate();
+                    Invalidate();
                 }
                 else
                 {
-                    this.DialogResult = DialogResult.Cancel;
-                    this.Close();
+                    DialogResult = DialogResult.Cancel;
+                    Close();
                 }
                 m.Result = IntPtr.Zero;
                 return;
@@ -588,11 +568,9 @@ namespace screenshot
 
             if (isColorPicker)
             {
-                using (SolidBrush brush = new SolidBrush(currentMouseColor))
-                {
-                    e.Graphics.FillRectangle(brush, mousePos.X + 15, mousePos.Y + 15, 20, 20);
-                    e.Graphics.DrawRectangle(whitePen, mousePos.X + 15, mousePos.Y + 15, 20, 20);
-                }
+                using SolidBrush brush = new SolidBrush(currentMouseColor);
+                e.Graphics.FillRectangle(brush, mousePos.X + 15, mousePos.Y + 15, 20, 20);
+                e.Graphics.DrawRectangle(whitePen, mousePos.X + 15, mousePos.Y + 15, 20, 20);
             }
             else if (isDrawingRectangle && currentAltRect.Width > 0 && currentAltRect.Height > 0)
             {
@@ -604,10 +582,10 @@ namespace screenshot
             }
             else if (isDrawing || SelectedArea.Width > 0)
             {
-                e.Graphics.FillRectangle(dimSelectedBrush, 0, 0, this.Width, SelectedArea.Top);
+                e.Graphics.FillRectangle(dimSelectedBrush, 0, 0, Width, SelectedArea.Top);
                 e.Graphics.FillRectangle(dimSelectedBrush, 0, SelectedArea.Top, SelectedArea.Left, SelectedArea.Height);
-                e.Graphics.FillRectangle(dimSelectedBrush, SelectedArea.Right, SelectedArea.Top, this.Width - SelectedArea.Right, SelectedArea.Height);
-                e.Graphics.FillRectangle(dimSelectedBrush, 0, SelectedArea.Bottom, this.Width, this.Height - SelectedArea.Bottom);
+                e.Graphics.FillRectangle(dimSelectedBrush, SelectedArea.Right, SelectedArea.Top, Width - SelectedArea.Right, SelectedArea.Height);
+                e.Graphics.FillRectangle(dimSelectedBrush, 0, SelectedArea.Bottom, Width, Height - SelectedArea.Bottom);
 
                 e.Graphics.DrawRectangle(cyanPen, SelectedArea);
             }
@@ -615,7 +593,7 @@ namespace screenshot
             {
                 if (!isCtrlPressed && !isAltPressed && !isShiftPressed)
                 {
-                    e.Graphics.FillRectangle(dimOverlayBrush, 0, 0, this.Width, this.Height);
+                    e.Graphics.FillRectangle(dimOverlayBrush, 0, 0, Width, Height);
                 }
             }
         }
@@ -628,12 +606,12 @@ namespace screenshot
             if (isColorPicker)
             {
                 currentMouseColor = GetPixelColor(e.X, e.Y);
-                this.Invalidate();
+                Invalidate();
             }
             else if (isDrawingWithPen && currentPenAction != null)
             {
                 currentPenAction.Points.Add(e.Location);
-                this.Invalidate();
+                Invalidate();
             }
             else if (isDrawingRectangle)
             {
@@ -642,7 +620,7 @@ namespace screenshot
                 int width = Math.Abs(startPoint.X - e.X);
                 int height = Math.Abs(startPoint.Y - e.Y);
                 currentAltRect = new Rectangle(x, y, width, height);
-                this.Invalidate();
+                Invalidate();
             }
             else if (isDrawingHollowRectangle)
             {
@@ -651,7 +629,7 @@ namespace screenshot
                 int width = Math.Abs(startPoint.X - e.X);
                 int height = Math.Abs(startPoint.Y - e.Y);
                 currentShiftRect = new Rectangle(x, y, width, height);
-                this.Invalidate();
+                Invalidate();
             }
             else if (isDrawing)
             {
@@ -660,7 +638,7 @@ namespace screenshot
                 int width = Math.Abs(startPoint.X - e.X);
                 int height = Math.Abs(startPoint.Y - e.Y);
                 SelectedArea = new Rectangle(x, y, width, height);
-                this.Invalidate();
+                Invalidate();
             }
         }
 
@@ -672,8 +650,8 @@ namespace screenshot
                 {
                     Color c = GetPixelColor(e.X, e.Y);
                     SelectedColorHex = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
+                    DialogResult = DialogResult.OK;
+                    Close();
                 }
                 else if (isCtrlPressed)
                 {
@@ -723,7 +701,7 @@ namespace screenshot
                         actions.Add(new RectAction { Rect = currentAltRect, Color = Color.Maroon });
                     }
                     currentAltRect = Rectangle.Empty;
-                    this.Invalidate();
+                    Invalidate();
                 }
                 else if (isDrawingHollowRectangle)
                 {
@@ -733,7 +711,7 @@ namespace screenshot
                         actions.Add(new HollowRectAction { Rect = currentShiftRect, Color = Color.Red, Width = 3f });
                     }
                     currentShiftRect = Rectangle.Empty;
-                    this.Invalidate();
+                    Invalidate();
                 }
                 else if (!isColorPicker && isDrawing)
                 {
@@ -741,8 +719,8 @@ namespace screenshot
                     if (SelectedArea.Width > 5 && SelectedArea.Height > 5)
                     {
                         BakeActionsToBackground();
-                        this.DialogResult = DialogResult.OK;
-                        this.Close();
+                        DialogResult = DialogResult.OK;
+                        Close();
                     }
                 }
             }
@@ -751,8 +729,8 @@ namespace screenshot
         {
             if (keyData == Keys.Escape)
             {
-                this.DialogResult = DialogResult.Cancel;
-                this.Close();
+                DialogResult = DialogResult.Cancel;
+                Close();
                 return true;
             }
             if (keyData == Keys.Back || keyData == Keys.Z)
