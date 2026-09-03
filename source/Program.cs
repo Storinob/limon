@@ -230,7 +230,7 @@ namespace screenshot
             if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
             
             string randomName = GenerateRandomName();
-            return Path.Combine(targetDir, $"{randomName}.png");
+            return Path.Combine(targetDir, $"{randomName}.webp");
         }
 
         private Bitmap CaptureScreenWithBitBlt(Rectangle bounds)
@@ -271,17 +271,37 @@ namespace screenshot
         private void SaveAndCopy(Bitmap bmp)
         {
             string savePath = GetSavePath();
-            bmp.Save(savePath, ImageFormat.Png);
-            
-            using (MemoryStream ms = new MemoryStream())
+
+            using (MemoryStream bmpStream = new MemoryStream())
             {
-                bmp.Save(ms, ImageFormat.Png);
-                byte[] buffer = ms.ToArray();
-                
-                DataObject dataObject = new DataObject();
-                dataObject.SetData("PNG", false, new MemoryStream(buffer));
-                dataObject.SetData(DataFormats.Bitmap, true, bmp);
-                Clipboard.SetDataObject(dataObject, true);
+                bmp.Save(bmpStream, ImageFormat.Png);
+                bmpStream.Position = 0;
+
+                using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(bmpStream))
+                {
+                    var webpEncoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
+                    {
+                        FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless,
+                        Quality = 100
+                    };
+
+                    using (FileStream fs = File.Create(savePath))
+                    {
+                        image.Save(fs, webpEncoder);
+                    }
+
+                    using (MemoryStream msWebp = new MemoryStream())
+                    {
+                        image.Save(msWebp, webpEncoder);
+                        byte[] buffer = msWebp.ToArray();
+
+                        DataObject dataObject = new DataObject();
+                        dataObject.SetData(DataFormats.FileDrop, true, new string[] { savePath });
+                        dataObject.SetData(DataFormats.Bitmap, true, bmp);
+
+                        Clipboard.SetDataObject(dataObject, true);
+                    }
+                }
             }
 
             try
