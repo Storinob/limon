@@ -25,6 +25,9 @@ First of all, I built this utility for myself, but I also prepared it for public
     * `Shift + PrintScreen` — Instant screenshot of the entire screen.
     * `Ctrl + PrintScreen` — Dropper (Color Picker). Left-click copies the HEX code of the colour to the clipboard.
 
+## Planed Features
+- Change `PNG` > `WebP/AVIF`
+
 ## Build
 
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
