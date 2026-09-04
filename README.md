@@ -25,9 +25,6 @@ First of all, I built this utility for myself, but I also prepared it for public
     * `Shift + PrintScreen` — Instant screenshot of the entire screen.
     * `Ctrl + PrintScreen` — Dropper (Color Picker). Left-click copies the HEX code of the colour to the clipboard.
 
-## Planed Features
-- Change `PNG` > `WebP/AVIF`
-
 ## Build
 
 [![License](https://img.shields.io/github/license/Storinob/limon?color=green)](https://github.com/Storinob/limon/blob/main/LICENSE)
@@ -37,11 +34,12 @@ First of all, I built this utility for myself, but I also prepared it for public
 
 Command must be executed inside the project folder.
 
-If you just want to compile a program (~51,8MB):
+If you just want to compile a program (~10,44MB):
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
-If you want to build a program completely independent (packs some libraries into the program itself, increasing its weight to ~160MB. **Basically, not needed for u and in most cases the first option is suitable.**):
+If you want to build a program completely independent (packs some libraries into the program itself, increasing its weight. **Basically, not needed for u and in most cases the first option is suitable.**)
+(**This build method is not currently supported, although it may work.**):
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
