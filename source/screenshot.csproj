@@ -12,15 +12,15 @@
     <Authors>b1no</Authors>
 	  <Publisher>b1no</Publisher>
     <Copyright>© 2026 b1no. All rights reserved</Copyright>
-  	<AssemblyVersion>5.1.0</AssemblyVersion>
-    <FileVersion>5.1.0</FileVersion>
-  	<Version>5.1.0</Version>
+  	<AssemblyVersion>5.2.2</AssemblyVersion>
+    <FileVersion>5.2.2</FileVersion>
+  	<Version>5.2.2</Version>
     <InformationalVersion>Stable</InformationalVersion>
 	  <RepositoryUrl>https://github.com/Storinob/limon</RepositoryUrl>
     <SixLaborsLicenseFile>sixlabors.lic</SixLaborsLicenseFile>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="done.wav" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="4.1.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
   </ItemGroup>
 </Project>

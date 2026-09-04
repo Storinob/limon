@@ -61,21 +61,30 @@ namespace screenshot
             {
                 string? exePath = Environment.ProcessPath;
                 if (string.IsNullOrEmpty(exePath)) return;
-
                 string appDir = Path.GetDirectoryName(exePath) ?? "";
                 long sizeInKb = new FileInfo(exePath).Length / 1024;
-
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                string title = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyProductAttribute), false)
+                    .OfType<System.Reflection.AssemblyProductAttribute>()
+                    .FirstOrDefault()?.Product ?? "limon";
+                string company = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyCompanyAttribute), false)
+                    .OfType<System.Reflection.AssemblyCompanyAttribute>()
+                    .FirstOrDefault()?.Company ?? "b1no";
+                string version = assembly.GetName().Version?.ToString(2) ?? "1.0";
+                string repoUrl = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+                    .OfType<System.Reflection.AssemblyMetadataAttribute>()
+                    .FirstOrDefault(a => a.Key == "RepositoryUrl")?.Value ?? "https://github.com/Storinob/limon";
                 using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-                using RegistryKey key = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\limon");
+                using RegistryKey key = baseKey.CreateSubKey($@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{title}");
                 if (key != null)
                 {
-                    key.SetValue("DisplayName", "limon");
-                    key.SetValue("Publisher", "b1no");
+                    key.SetValue("DisplayName", title);
+                    key.SetValue("Publisher", company);
                     key.SetValue("DisplayIcon", exePath);
-                    key.SetValue("DisplayVersion", "4.4");
+                    key.SetValue("DisplayVersion", version);
                     key.SetValue("InstallLocation", appDir);
                     key.SetValue("EstimatedSize", (int)sizeInKb, RegistryValueKind.DWord);
-                    key.SetValue("URLInfoAbout", "https://github.com/Storinob/limon", RegistryValueKind.String);
+                    key.SetValue("URLInfoAbout", repoUrl, RegistryValueKind.String);
 
                     string uninstallCommand = $"\"{exePath}\" --uninstall";
                     key.SetValue("UninstallString", uninstallCommand, RegistryValueKind.String);
@@ -85,8 +94,8 @@ namespace screenshot
             }
             catch
             {
-				
-			}
+                // 123
+            }
         }
         private static void RunSelfUninstall()
         {
@@ -153,6 +162,7 @@ namespace screenshot
 
     class HiddenForm : Form
     {
+        private bool isBusy = false;
         private const int WM_HOTKEY = 0x0312;
         private const uint MOD_NONE = 0x0000;
         private const uint MOD_SHIFT = 0x0004;
@@ -208,10 +218,20 @@ namespace screenshot
         {
             if (m.Msg == WM_HOTKEY)
             {
-                int id = m.WParam.ToInt32();
-                if (id == 1) CaptureArea();
-                else if (id == 2) CaptureFullScreen();
-                else if (id == 3) StartPicker();
+                if (isBusy) return;
+
+                try
+                {
+                    isBusy = true;
+                    int id = m.WParam.ToInt32();
+                    if (id == 1) CaptureArea();
+                    else if (id == 2) CaptureFullScreen();
+                    else if (id == 3) StartPicker();
+                }
+                finally
+                {
+                    isBusy = false;
+                }
             }
             base.WndProc(ref m);
         }
@@ -277,32 +297,22 @@ namespace screenshot
                 bmp.Save(bmpStream, ImageFormat.Png);
                 bmpStream.Position = 0;
 
-                using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(bmpStream))
+                using (SkiaSharp.SKBitmap skBitmap = SkiaSharp.SKBitmap.Decode(bmpStream))
+                using (SkiaSharp.SKImage skImage = SkiaSharp.SKImage.FromBitmap(skBitmap))
+                using (SkiaSharp.SKData data = skImage.Encode(SkiaSharp.SKEncodedImageFormat.Webp, 100))
                 {
-                    var webpEncoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
-                    {
-                        FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless,
-                        Quality = 100
-                    };
-
                     using (FileStream fs = File.Create(savePath))
                     {
-                        image.Save(fs, webpEncoder);
-                    }
-
-                    using (MemoryStream msWebp = new MemoryStream())
-                    {
-                        image.Save(msWebp, webpEncoder);
-                        byte[] buffer = msWebp.ToArray();
-
-                        DataObject dataObject = new DataObject();
-                        dataObject.SetData(DataFormats.FileDrop, true, new string[] { savePath });
-                        dataObject.SetData(DataFormats.Bitmap, true, bmp);
-
-                        Clipboard.SetDataObject(dataObject, true);
+                        data.SaveTo(fs);
                     }
                 }
             }
+
+            DataObject dataObject = new DataObject();
+            dataObject.SetData(DataFormats.FileDrop, true, new string[] { savePath });
+            dataObject.SetData(DataFormats.Bitmap, true, bmp);
+
+            Clipboard.SetDataObject(dataObject, true);
 
             try
             {
