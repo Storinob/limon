@@ -37,7 +37,7 @@ First of all, I built this utility for myself, but I also prepared it for public
 
 Command must be executed inside the project folder.
 
-If you just want to compile a program (~240KB):
+If you just want to compile a program (~51,8MB):
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true
 ```
